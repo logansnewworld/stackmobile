@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Pro Events - Stack 'Em Up Anniversary</title>
+  
+  <!-- Three.js for 3D Tower Graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      /* Main Background */
+      background: #0d1117 url('honeycomb-hexagons-3840x2160-15320.png') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Container for layout */
+    #main-layout {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Header with Pro Events Logo (Centered) */
+    header {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+    }
+
+    .header-logo {
+      max-height: 60px;
+      width: auto;
+      filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.6));
+    }
+
+    /* Sidebar Right for the ENLARGED 25 Year Badge */
+    .sidebar-right {
+      flex: 0 0 350px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+      background: rgba(13, 17, 23, 0.4); 
+    }
+
+    .badge-25-enlarged {
+      width: 320px;
+      height: auto;
+      filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.7));
+      animation: pulse 4s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.03); opacity: 1; }
+    }
+
+    /* Game Container */
+    #game-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Score and Overlay UI */
+    #ui {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: #00d2ff;
+      font-size: 2.2rem;
+      font-weight: bold;
+      text-shadow: 0 0 12px rgba(0, 210, 255, 0.9), 0 0 5px rgba(0, 0, 0, 1);
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+
+    #game-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #instructions {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 24px;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 210, 255, 0.4);
+      font-size: 1rem;
+      pointer-events: none;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+
+    #game-over-screen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      background: rgba(10, 15, 25, 0.95);
+      border: 2px solid #00d2ff;
+      box-shadow: 0 0 40px rgba(0, 210, 255, 0.6);
+      padding: 40px 60px;
+      border-radius: 15px;
+      text-align: center;
+      color: white;
+      display: none;
+      min-width: 300px;
+    }
+
+    #game-over-screen h1 {
+      color: #ff3366;
+      margin-bottom: 15px;
+      font-size: 2.5rem;
+      text-shadow: 0 0 10px rgba(255, 51, 102, 0.7);
+    }
+
+    #final-score {
+      font-weight: bold;
+      color: #00d2ff;
+    }
+
+    #restart-btn {
+      margin-top: 25px;
+      padding: 14px 32px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: linear-gradient(45deg, #00d2ff, #0072ff);
+      color: white;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
+      transition: all 0.2s;
+    }
+
+    #restart-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 25px rgba(0, 210, 255, 0.9);
+    }
+
+    /* Mobile Responsive adjustments */
+    @media (max-width: 900px) {
+      #main-layout {
+        flex-direction: column;
+      }
+      
+      .sidebar-right {
+        flex: 0 0 120px;
+        width: 100%;
+        order: 2;
+        background: rgba(13, 17, 23, 0.7); 
+      }
+      
+      .badge-25-enlarged {
+        width: auto;
+        height: 100px;
+      }
+      
+      #game-area {
+        flex: 1;
+        order: 1;
+      }
+
+      .header-logo { max-height: 45px; }
+      #ui { font-size: 2.0rem; top: 65px; }
+      #instructions { font-size: 0.9rem; padding: 10px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Game Layout Structure -->
+  <div id="main-layout">
+    
+    <!-- Game Area -->
+    <div id="game-area">
+      <!-- Score Board -->
+      <div id="ui">STACK: <span id="score">0</span></div>
+      <div id="instructions">Tap Screen or Press Space to Place Block</div>
+
+      <!-- Game Over Screen -->
+      <div id="game-over-screen">
+        <h1>GAME OVER</h1>
+        <p>Tower Height: <span id="final-score">0</span> Blocks</p>
+        <button id="restart-btn" onclick="restartGame()">PLAY AGAIN</button>
+      </div>
+
+      <!-- 3D Canvas Container -->
+      <div id="game-container"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- Audio Engine (Web Audio API) ---
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playPlaceSound(comboScore) {
+      initAudio();
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      // Pitch rises as the stack grows higher
+      const baseFreq = 220; 
+      const freq = baseFreq * Math.pow(1.05946, (comboScore % 24)); // Chromatic scale progression
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.2, audioCtx.currentTime + 0.1);
+
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function playGameOverSound() {
+      initAudio();
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.4);
+
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
+    }
+
+    function playRestartSound() {
+      initAudio();
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(500, audioCtx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    }
+
+    // --- Game Variables & Engine Setup ---
+    let scene, camera, renderer;
+    let stack = [];
+    let overhangs = [];
+    const boxHeight = 1;
+    let score = 0;
+    let gameEnded = false;
+    let activeBlock = null;
+    let speed = 0.15;
+    let gameContainerDiv;
+
+    const colors = [
+      0x00d2ff, 0x00aaff, 0x0072ff, 0x3b82f6, 
+      0x6366f1, 0x8b5cf6, 0xec4899, 0xf43f5e
+    ];
+
+    function init() {
+      gameContainerDiv = document.getElementById('game-container');
+
+      // 3D Scene
+      scene = new THREE.Scene();
+
+      // Camera Setup
+      updateCameraAspect();
+      camera.position.set(20, 20, 20);
+      camera.lookAt(0, 0, 0);
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(gameContainerDiv.offsetWidth, gameContainerDiv.offsetHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      gameContainerDiv.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+      dirLight.position.set(15, 40, 20);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      // Base Box
+      addLayer(0, 0, 10, 10, 'static');
+
+      // First Moving Box
+      addLayer(0, 0, 10, 10, 'x');
+
+      window.addEventListener('resize', onWindowResize);
+      window.addEventListener('pointerdown', handleAction);
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') handleAction();
+      });
+
+      animate();
+    }
+
+    function updateCameraAspect() {
+      const width = gameContainerDiv.offsetWidth;
+      const height = gameContainerDiv.offsetHeight;
+      const aspect = width / height;
+      const d = 20;
+      
+      if (!camera) {
+        camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, -100, 1000);
+      } else {
+        camera.left = -d * aspect;
+        camera.right = d * aspect;
+        camera.top = d;
+        camera.bottom = -d;
+        camera.updateProjectionMatrix();
+      }
+    }
+
+    function addLayer(x, z, width, depth, dir) {
+      const y = stack.length * boxHeight;
+      const color = colors[stack.length % colors.length];
+
+      const geometry = new THREE.BoxGeometry(width, boxHeight, depth);
+      const material = new THREE.MeshPhongMaterial({
+        color: color,
+        shininess: 80,
+        specular: 0xffffff
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+
+      activeBlock = {
+        mesh: mesh,
+        width: width,
+        depth: depth,
+        direction: dir,
+        x: x,
+        z: z
+      };
+
+      stack.push(activeBlock);
+    }
+
+    function handleAction() {
+      initAudio();
+      if (gameEnded) return;
+
+      const currentLayer = stack[stack.length - 1];
+      const previousLayer = stack[stack.length - 2];
+
+      const dir = currentLayer.direction;
+      const delta = currentLayer.mesh.position[dir] - previousLayer.mesh.position[dir];
+      const overhangingSize = Math.abs(delta);
+      const size = dir === 'x' ? currentLayer.width : currentLayer.depth;
+      const overlap = size - overhangingSize;
+
+      if (overlap > 0) {
+        // Successful Placement: Cut block to size
+        const newWidth = dir === 'x' ? overlap : currentLayer.width;
+        const newDepth = dir === 'z' ? overlap : currentLayer.depth;
+
+        // Resize current block mesh
+        currentLayer.width = newWidth;
+        currentLayer.depth = newDepth;
+
+        currentLayer.mesh.scale[dir] = overlap / size;
+        currentLayer.mesh.position[dir] -= delta / 2;
+
+        // Spawn falling trimmed piece
+        createOverhang(
+          dir === 'x' ? currentLayer.mesh.position.x + (delta > 0 ? overlap/2 + overhangingSize/2 : -overlap/2 - overhangingSize/2) : currentLayer.mesh.position.x,
+          currentLayer.mesh.position.y,
+          dir === 'z' ? currentLayer.mesh.position.z + (delta > 0 ? overlap/2 + overhangingSize/2 : -overlap/2 - overhangingSize/2) : currentLayer.mesh.position.z,
+          dir === 'x' ? overhangingSize : newWidth,
+          dir === 'z' ? overhangingSize : newDepth,
+          currentLayer.mesh.material.color
+        );
+
+        // Update score
+        score++;
+        document.getElementById('score').innerText = score;
+        speed += 0.005;
+
+        // Play placement audio tone
+        playPlaceSound(score);
+
+        // Prepare next moving layer
+        const nextDirection = dir === 'x' ? 'z' : 'x';
+        addLayer(currentLayer.mesh.position.x, currentLayer.mesh.position.z, newWidth, newDepth, nextDirection);
+
+      } else {
+        // Missed entirely - Game Over
+        createOverhang(
+          currentLayer.mesh.position.x,
+          currentLayer.mesh.position.y,
+          currentLayer.mesh.position.z,
+          currentLayer.width,
+          currentLayer.depth,
+          currentLayer.mesh.material.color
+        );
+        scene.remove(currentLayer.mesh);
+        gameOver();
+      }
+    }
+
+    function createOverhang(x, y, z, width, depth, color) {
+      const geometry = new THREE.BoxGeometry(width, boxHeight, depth);
+      const material = new THREE.MeshPhongMaterial({ color });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      scene.add(mesh);
+      overhangs.push({ mesh, speedY: 0.1 });
+    }
+
+    function gameOver() {
+      gameEnded = true;
+      playGameOverSound();
+      document.getElementById('final-score').innerText = score;
+      document.getElementById('game-over-screen').style.display = 'block';
+    }
+
+    function restartGame() {
+      playRestartSound();
+      
+      // Clear Stack
+      stack.forEach(layer => scene.remove(layer.mesh));
+      overhangs.forEach(o => scene.remove(o.mesh));
+      stack = [];
+      overhangs = [];
+      score = 0;
+      speed = 0.15;
+      gameEnded = false;
+
+      document.getElementById('score').innerText = '0';
+      document.getElementById('game-over-screen').style.display = 'none';
+
+      camera.position.set(20, 20, 20);
+
+      addLayer(0, 0, 10, 10, 'static');
+      addLayer(0, 0, 10, 10, 'x');
+    }
+
+    function onWindowResize() {
+      updateCameraAspect();
+      renderer.setSize(gameContainerDiv.offsetWidth, gameContainerDiv.offsetHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (!gameEnded && activeBlock && activeBlock.direction !== 'static') {
+        const time = Date.now() * 0.003 * (speed * 8);
+        const limit = 12;
+        activeBlock.mesh.position[activeBlock.direction] = Math.sin(time) * limit;
+      }
+
+      // Animate falling trimmed pieces
+      overhangs.forEach((item, index) => {
+        item.mesh.position.y -= item.speedY;
+        item.speedY += 0.02; // Gravity
+        if (item.mesh.position.y < -30) {
+          scene.remove(item.mesh);
+          overhangs.splice(index, 1);
+        }
+      });
+
+      // Camera smooth upward tracking
+      if (stack.length > 0) {
+        const targetCamY = 20 + (stack.length * boxHeight);
+        camera.position.y += (targetCamY - camera.position.y) * 0.08;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
